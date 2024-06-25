@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { StyleSheet, View, FlatList, ImageBackground, Image, Pressable } from 'react-native'
 import { showMessage } from 'react-native-flash-message'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { getDetail } from '../../api/RestaurantEndpoints'
+import { getDetail, getProductosSeñalados } from '../../api/RestaurantEndpoints'
 import { remove } from '../../api/ProductEndpoints'
 import ImageCard from '../../components/ImageCard'
 import TextRegular from '../../components/TextRegular'
@@ -65,6 +65,11 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
         {!item.availability &&
           <TextRegular textStyle={styles.availability }>Not available</TextRegular>
         }
+        {(item.dissapear <= 7) &&
+          // SOLUCIÓN
+          // {item.visibleUntil && seleccionarProducto(item.visibleUntil) &&
+          <TextRegular textStyle={styles.availability }>Is about to dissapear!</TextRegular>
+        }
          <View style={styles.actionButtonsContainer}>
           <Pressable
             onPress={() => navigation.navigate('EditProductScreen', { id: item.id })
@@ -117,6 +122,7 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
 
   const fetchRestaurantDetail = async () => {
     try {
+      await getProductosSeñalados(route.params.id)
       const fetchedRestaurant = await getDetail(route.params.id)
       setRestaurant(fetchedRestaurant)
     } catch (error) {
@@ -151,6 +157,15 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
       })
     }
   }
+
+  // Determinar diferencia de dias
+  // const seleccionarProducto = async (deadline) => {
+  // const currentDate = new Date()
+  // const deadlineDate = new Date(deadline)
+  // const timeDiff = deadlineDate.getTime() - currentDate.getTime()
+  // const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24))
+  // return daysLeft <= 7
+  // }
 
   return (
     <View style={styles.container}>

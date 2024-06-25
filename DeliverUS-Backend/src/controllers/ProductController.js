@@ -107,12 +107,82 @@ const popular = async function (req, res) {
   }
 }
 
+// SOLUCIÓN
+const productosSeñalados2 = async function (req, res) {
+  try {
+    const products = await Product.findAll({ where: { restaurantId: req.params.restaurantId } })
+    for (const pr of products) {
+      const product = await Product.findByPk(pr.id)
+      const fechaFin = product.visibleUntil
+      if (fechaFin !== null) {
+        const fechaActual = Date.now()
+        const hoy = new Date(fechaActual)
+        const diferencia = fechaFin.diff(hoy, 'days')
+        if (diferencia < 8) {
+          await Product.update({ dissapear: true }, { where: { id: product.id } })
+        }
+      }
+    }
+    const updatedProducts = await Product.findAll({
+      where: {
+        restaurantId: req.params.restaurantId
+      },
+      include: [
+        {
+          model: ProductCategory,
+          as: 'productCategory'
+        }]
+    })
+    res.json(updatedProducts)
+  } catch (err) {
+    res.status(500).send(err)
+  }
+}
+
+// SOLUCIÓN
+const productosSeñalados = async function (req, res) {
+  try {
+    const products = await Product.findAll({ where: { restaurantId: req.params.restaurantId } })
+    for (const pr of products) {
+      const product = await Product.findByPk(pr.id)
+      if (product.visibleUntil !== null) {
+        const currentDate = new Date()
+        const deadlineDate = new Date(product.visibleUntil)
+        const copy = new Date()
+        copy.setTime(deadlineDate.getTime())
+        const timeDiff = copy - currentDate.getTime()
+        // const timeDiff = deadlineDate.getTime() - currentDate.getTime()
+        const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24))
+        await Product.update({ dissapear: daysLeft }, { where: { id: product.id } })
+        // await Product.update({ dissapear: 5 }, { where: { id: product.id } })
+      } else {
+        await Product.update({ dissapear: 100 }, { where: { id: product.id } })
+      }
+    }
+    const updatedProducts = await Product.findAll({
+      where: {
+        restaurantId: req.params.restaurantId
+      },
+      include: [
+        {
+          model: ProductCategory,
+          as: 'productCategory'
+        }]
+    })
+    res.json(updatedProducts)
+  } catch (err) {
+    res.status(500).send(err)
+  }
+}
+
 const ProductController = {
   indexRestaurant,
   show,
   create,
   update,
   destroy,
-  popular
+  popular,
+  productosSeñalados,
+  productosSeñalados2
 }
 export default ProductController

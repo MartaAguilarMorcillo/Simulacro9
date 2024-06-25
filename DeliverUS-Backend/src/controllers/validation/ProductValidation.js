@@ -14,6 +14,44 @@ const checkRestaurantExists = async (value, { req }) => {
     return Promise.reject(new Error(err))
   }
 }
+
+// SOLUCIÓN
+const checkDateIsAfterNow = async (value, { req }) => {
+  if (value !== null) {
+    try {
+      // Como poner fecha de hoy
+      const hoy = new Date()
+      // Como comparar dos fechas
+      if (hoy < value && value) {
+        return Promise.resolve()
+      } else {
+        return Promise.reject(new Error('The visibility must finish after the current date'))
+      }
+    } catch (err) {
+      return Promise.reject(new Error(err))
+    }
+  } else {
+    return Promise.resolve()
+  }
+}
+
+const checkVisibleAvailable = async (value, { req }) => {
+  try {
+    if (value === false) {
+      const fechaVisibilidad = req.body.visibleUntil
+      if (fechaVisibilidad === null) {
+        return Promise.resolve()
+      } else {
+        return Promise.reject(new Error('Cannot set thr avalability and visibility at the same time'))
+      }
+    } else {
+      return Promise.resolve()
+    }
+  } catch (err) {
+    return Promise.reject(new Error(err))
+  }
+}
+
 const create = [
   check('name').exists().isString().isLength({ min: 1, max: 255 }).trim(),
   check('description').optional({ checkNull: true, checkFalsy: true }).isString().isLength({ min: 1 }).trim(),
@@ -28,7 +66,14 @@ const create = [
   }).withMessage('Please upload an image with format (jpeg, png).'),
   check('image').custom((value, { req }) => {
     return checkFileMaxSize(req, 'image', maxFileSize)
-  }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB')
+  }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB'),
+  // SOLUCIÓN
+  // Para poder dejar el campo sin rellenar o una vez rellenado poder volver a ponerlo a null
+  check('visibleUntil').default(null).optional({ nullable: true }).isDate().toDate(),
+  check('visibleUntil').custom(checkDateIsAfterNow).withMessage('The visibility must finish after the current date'),
+  check('availability').custom(checkVisibleAvailable).withMessage('Cannot set thr avalability and visibility at the same time'),
+  check('dissapear').optional().isInt().toInt()
+
 ]
 
 const update = [
@@ -45,7 +90,12 @@ const update = [
   check('image').custom((value, { req }) => {
     return checkFileMaxSize(req, 'image', maxFileSize)
   }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB'),
-  check('restaurantId').not().exists()
+  check('restaurantId').not().exists(),
+  // SOLUCIÓN
+  check('visibleUntil').default(null).optional({ nullable: true }).isDate().toDate(),
+  check('visibleUntil').custom(checkDateIsAfterNow).withMessage('The visibility must finish after the current date'),
+  check('availability').custom(checkVisibleAvailable).withMessage('Cannot set thr avalability and visibility at the same time'),
+  check('dissapear').optional().isInt().toInt()
 ]
 
 export { create, update }
